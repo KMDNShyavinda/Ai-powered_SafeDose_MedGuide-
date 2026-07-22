@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Environment & Secrets
+.env
+*.env
+server/.env
+
+# Build outputs
+dist/
+client/dist/
+.next/
+client/.next/
+
+# Uploaded User Prescriptions
+server/uploads/prescriptions/*
+!server/uploads/prescriptions/.gitkeep
+
+# System & IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
