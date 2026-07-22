@@ -1,0 +1,336 @@
+:root, [data-theme="dark"] {
+  --bg-dark-900: #060911;
+  --bg-dark-800: #0d1220;
+  --bg-dark-700: #171f32;
+  --primary-teal: #06b6d4;
+  --primary-teal-hover: #22d3ee;
+  --primary-teal-glow: rgba(6, 182, 212, 0.2);
+  --accent-purple: #8b5cf6;
+  --accent-purple-hover: #a78bfa;
+  --accent-purple-glow: rgba(139, 92, 246, 0.2);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dark: #64748b;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(13, 18, 32, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  --glass-card-bg: rgba(13, 18, 32, 0.65);
+  --input-bg: rgba(255, 255, 255, 0.05);
+  --input-border: rgba(255, 255, 255, 0.12);
+  --hero-bg-image: url('/images/hero-bg-dark.png');
+  --hero-overlay-gradient: linear-gradient(180deg, rgba(6, 9, 17, 0.65) 0%, rgba(6, 9, 17, 0.85) 60%, #060911 100%);
+  --hero-title-gradient: linear-gradient(135deg, #ffffff 40%, var(--primary-teal) 100%);
+  --danger: #ef4444;
+  --success: #10b981;
+  --warning: #f59e0b;
+}
+
+[data-theme="light"] {
+  --bg-dark-900: #f8fafc;
+  --bg-dark-800: #ffffff;
+  --bg-dark-700: #e2e8f0;
+  --primary-teal: #0284c7;
+  --primary-teal-hover: #0369a1;
+  --primary-teal-glow: rgba(2, 132, 199, 0.25);
+  --accent-purple: #7c3aed;
+  --accent-purple-hover: #6d28d9;
+  --accent-purple-glow: rgba(124, 58, 237, 0.25);
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-dark: #64748b;
+  --border-color: rgba(15, 23, 42, 0.12);
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(2, 132, 199, 0.18);
+  --glass-shadow: 0 8px 32px 0 rgba(2, 132, 199, 0.08);
+  --glass-card-bg: rgba(255, 255, 255, 0.88);
+  --input-bg: rgba(255, 255, 255, 0.95);
+  --input-border: rgba(2, 132, 199, 0.3);
+  --hero-bg-image: url('/images/hero-bg-light.jpg');
+  --hero-overlay-gradient: linear-gradient(180deg, rgba(248, 250, 252, 0.45) 0%, rgba(248, 250, 252, 0.85) 65%, #f8fafc 100%);
+  --hero-title-gradient: linear-gradient(135deg, #0f172a 30%, #0284c7 100%);
+  --danger: #dc2626;
+  --success: #059669;
+  --warning: #d97706;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-dark-700) var(--bg-dark-900);
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-dark-900);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--bg-dark-700);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-teal);
+}
+
+body {
+  background-color: var(--bg-dark-900);
+  color: var(--text-main);
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(circle at 10% 20%, var(--primary-teal-glow) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, var(--accent-purple-glow) 0%, transparent 45%);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: 12px;
+}
+
+.glass-card {
+  background: var(--glass-card-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--glass-shadow);
+  border-radius: 12px;
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--primary-teal);
+  box-shadow: 0 8px 30px 0 var(--primary-teal-glow);
+}
+
+/* Home Hero Custom Background Section */
+.home-hero-wrapper {
+  position: relative;
+  width: 100%;
+  background-image: var(--hero-bg-image);
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  transition: background-image 0.5s ease-in-out;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.home-hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--hero-overlay-gradient);
+  pointer-events: none;
+}
+
+/* Interactive elements */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: var(--primary-teal);
+  color: #ffffff;
+  box-shadow: 0 0 15px var(--primary-teal-glow);
+}
+.btn-primary:hover {
+  background: var(--primary-teal-hover);
+  box-shadow: 0 0 25px var(--primary-teal-glow);
+  transform: scale(1.02);
+}
+
+.btn-secondary {
+  background: var(--bg-dark-700);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+}
+.btn-secondary:hover {
+  background: var(--primary-teal-glow);
+  border-color: var(--primary-teal);
+}
+
+.btn-ai {
+  background: var(--accent-purple);
+  color: #ffffff;
+  box-shadow: 0 0 15px var(--accent-purple-glow);
+}
+.btn-ai:hover {
+  background: var(--accent-purple-hover);
+  box-shadow: 0 0 25px var(--accent-purple-glow);
+  transform: scale(1.02);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: #ffffff;
+}
+.btn-danger:hover {
+  filter: brightness(1.1);
+}
+
+/* Input Styles */
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-main);
+  outline: none;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus {
+  border-color: var(--primary-teal);
+  background: var(--input-bg);
+  box-shadow: 0 0 12px var(--primary-teal-glow);
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Theme Toggle Button */
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--glass-bg);
+  border: 1px solid var(--border-color);
+  color: var(--primary-teal);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--glass-shadow);
+}
+
+.theme-toggle-btn:hover {
+  transform: rotate(20deg) scale(1.08);
+  border-color: var(--primary-teal);
+  box-shadow: 0 0 15px var(--primary-teal-glow);
+}
+
+/* Layout utilities */
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.grid-cols-3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+/* Micro-animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease forwards;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge-rx {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.badge-otc {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+/* Medicine Card Images */
+.med-card-img-wrapper {
+  position: relative;
+  height: 160px;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.med-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover .med-card-img {
+  transform: scale(1.06);
+}
+
+/* Explicitly style option dropdowns to fix invisible text in browser menus */
+select option {
+  background-color: var(--bg-dark-800) !important;
+  color: var(--text-main) !important;
+}
+
+select:focus {
+  background-color: var(--bg-dark-800) !important;
+}

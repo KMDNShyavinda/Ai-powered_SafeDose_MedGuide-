@@ -1,0 +1,131 @@
+import React from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Activity, MessageSquare, Heart, Shield, LogOut, User, LogIn, FileText, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+
+export default function Navbar({ user, onLogout }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
+
+  const isActive = (path) => location.pathname === path;
+
+  return (
+    <nav className="glass-panel" style={{
+      position: 'sticky',
+      top: 0,
+      zIndex: 100,
+      margin: '16px 24px',
+      padding: '12px 24px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderRadius: '16px',
+    }}>
+      <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: 'var(--text-main)' }}>
+        <Activity size={28} color="var(--primary-teal)" />
+        <span style={{
+          fontFamily: 'Outfit',
+          fontSize: '1.4rem',
+          fontWeight: 800,
+          background: 'linear-gradient(90deg, var(--text-main), var(--primary-teal))',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          letterSpacing: '-0.5px'
+        }}>
+          SafeDose <span style={{ fontWeight: 400, fontSize: '1.2rem', opacity: 0.8 }}>MedGuide</span>
+        </span>
+      </Link>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <Link to="/medicines" className={`btn ${isActive('/medicines') ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '8px 16px', fontSize: '0.88rem' }}>
+          Browse Medicines
+        </Link>
+        <Link to="/ai-chat" className={`btn ${isActive('/ai-chat') ? 'btn-ai' : 'btn-secondary'}`} style={{ padding: '8px 16px', fontSize: '0.88rem' }}>
+          <MessageSquare size={16} />
+          AI Assistant
+        </Link>
+
+        {user && (
+          <Link to="/prescriptions" className={`btn ${isActive('/prescriptions') ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '8px 16px', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <FileText size={16} />
+            Rx Analyzer
+          </Link>
+        )}
+
+        {user && (
+          <Link to="/favorites" className={`btn ${isActive('/favorites') ? 'btn-primary' : 'btn-secondary'}`} style={{
+            padding: '8px 16px',
+            fontSize: '0.88rem',
+            background: isActive('/favorites') ? 'var(--primary-teal)' : 'transparent',
+            borderColor: 'var(--border-color)',
+            color: 'var(--text-main)'
+          }}>
+            <Heart size={16} color={isActive('/favorites') ? '#ffffff' : 'var(--danger)'} fill={isActive('/favorites') ? '#ffffff' : 'none'} />
+            Favorites
+          </Link>
+        )}
+
+        {user && (user.role?.name === 'admin' || user.role?.name === 'pharmacist') && (
+          <Link to="/dashboard" className={`btn ${isActive('/dashboard') ? 'btn-primary' : 'btn-secondary'}`} style={{
+            padding: '8px 16px',
+            fontSize: '0.88rem',
+            borderColor: 'var(--border-color)',
+          }}>
+            <Shield size={16} />
+            Dashboard
+          </Link>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <button
+          onClick={toggleTheme}
+          className="theme-toggle-btn"
+          title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
+          aria-label="Toggle theme"
+        >
+          {theme === 'dark' ? <Sun size={20} color="#f59e0b" /> : <Moon size={20} color="var(--primary-teal)" />}
+        </button>
+
+        {user ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, var(--primary-teal), var(--accent-purple))',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ffffff',
+                fontWeight: 600,
+                fontSize: '0.9rem'
+              }}>
+                {user.firstName[0]}
+              </div>
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-main)', fontWeight: 500 }}>
+                {user.firstName}
+              </span>
+            </div>
+            <button onClick={onLogout} className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <LogOut size={14} />
+              Logout
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Link to="/login" className="btn btn-secondary" style={{ padding: '8px 16px', fontSize: '0.88rem' }}>
+              <LogIn size={14} />
+              Sign In
+            </Link>
+            <Link to="/register" className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.88rem' }}>
+              Register
+            </Link>
+          </div>
+        )}
+      </div>
+    </nav>
+  );
+}
