@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Plus, Edit2, Trash2, Eye, Info, Check, X, AlertTriangle } from 'lucide-react';
+import { Shield, Plus, Edit2, Trash2, Eye, Info, Check, X, AlertTriangle, UserCheck, FileText, ExternalLink, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { api } from '../utils/api';
 
 export default function Dashboard({ user }) {
@@ -18,9 +18,16 @@ export default function Dashboard({ user }) {
     }
   }, [user, navigate]);
 
+  const [activeTab, setActiveTab] = useState('inventory'); // 'inventory' | 'role-requests'
+  
+  // Inventory state
   const [medicines, setMedicines] = useState([]);
   const [categories, setCategories] = useState([]);
   const [manufacturers, setManufacturers] = useState([]);
+  
+  // Role Requests state
+  const [roleRequests, setRoleRequests] = useState([]);
+  const [filterStatus, setFilterStatus] = useState('all');
   
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -40,6 +47,8 @@ export default function Dashboard({ user }) {
 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [rejectReasonModal, setRejectReasonModal] = useState(null); // request ID to reject
+  const [rejectionReasonText, setRejectionReasonText] = useState('');
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -61,6 +70,14 @@ export default function Dashboard({ user }) {
       if (manRes.success && manRes.data?.manufacturers) {
         setManufacturers(manRes.data.manufacturers);
       }
+
+      // Fetch role requests if admin
+      if (user?.role?.name === 'admin') {
+        const reqRes = await api.get('/role-requests');
+        if (reqRes.success && reqRes.data?.requests) {
+          setRoleRequests(reqRes.data.requests);
+        }
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -73,6 +90,42 @@ export default function Dashboard({ user }) {
       fetchDashboardData();
     }
   }, [user]);
+
+  const handleApproveRequest = async (requestId) => {
+    try {
+      const res = await api.put(`/role-requests/${requestId}/approve`);
+      if (res.success) {
+        setSuccess(res.message || 'Role request approved successfully');
+        fetchDashboardData();
+      } else {
+        setError(res.message || 'Failed to approve request');
+      }
+    } catch (err) {
+      setError(err.message || 'Error approving role request');
+    }
+  };
+
+  const handleRejectRequestSubmit = async (e) => {
+    e.preventDefault();
+    if (!rejectReasonModal) return;
+
+    try {
+      const res = await api.put(`/role-requests/${rejectReasonModal}/reject`, {
+        rejectionReason: rejectionReasonText
+      });
+
+      if (res.success) {
+        setSuccess('Role request rejected.');
+        setRejectReasonModal(null);
+        setRejectionReasonText('');
+        fetchDashboardData();
+      } else {
+        setError(res.message || 'Failed to reject request');
+      }
+    } catch (err) {
+      setError(err.message || 'Error rejecting role request');
+    }
+  };
 
   const handleOpenAddModal = () => {
     setEditId(null);
@@ -179,7 +232,12 @@ export default function Dashboard({ user }) {
   // Analytics Metrics
   const totalMedicines = medicines.length;
   const activeMedicines = medicines.filter(m => m.isActive).length;
-  const totalViews = medicines.reduce((sum, m) => sum + (m.viewCount || 0), 0);
+  const pendingRequestsCount = roleRequests.filter(r => r.status === 'pending').length;
+
+  const filteredRequests = roleRequests.filter(r => {
+    if (filterStatus === 'all') return true;
+    return r.status === filterStatus;
+  });
 
   return (
     <>
@@ -193,12 +251,48 @@ export default function Dashboard({ user }) {
             SafeDose Management Panel
           </h1>
           <p style={{ color: 'var(--text-muted)', marginTop: '4px' }}>
-            Manage medicine listings, view access reports, and monitor inventory items.
+            Manage medicine listings, review role requests, and verify user credentials.
           </p>
         </div>
         <button onClick={handleOpenAddModal} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Plus size={18} /> Add Medicine
         </button>
+      </div>
+
+      {/* Navigation Tabs (Inventory vs Role Verification Requests) */}
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
+        <button
+          onClick={() => setActiveTab('inventory')}
+          className={`btn ${activeTab === 'inventory' ? 'btn-primary' : 'btn-secondary'}`}
+          style={{ padding: '10px 24px', fontSize: '0.95rem', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}
+        >
+          <Shield size={18} />
+          Medicine Inventory
+        </button>
+
+        {user?.role?.name === 'admin' && (
+          <button
+            onClick={() => setActiveTab('role-requests')}
+            className={`btn ${activeTab === 'role-requests' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ padding: '10px 24px', fontSize: '0.95rem', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}
+          >
+            <UserCheck size={18} />
+            Role Verification Requests
+            {pendingRequestsCount > 0 && (
+              <span style={{
+                background: 'var(--danger)',
+                color: '#ffffff',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                padding: '2px 8px',
+                borderRadius: '10px',
+                marginLeft: '4px'
+              }}>
+                {pendingRequestsCount}
+              </span>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Analytics Summary */}
@@ -212,8 +306,8 @@ export default function Dashboard({ user }) {
           <h2 style={{ fontSize: '2.5rem', fontFamily: 'Outfit', color: 'var(--success)', marginTop: '8px' }}>{activeMedicines}</h2>
         </div>
         <div className="glass-card" style={{ padding: '24px' }}>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-dark)', textTransform: 'uppercase', fontWeight: 600 }}>Total Views</span>
-          <h2 style={{ fontSize: '2.5rem', fontFamily: 'Outfit', color: 'var(--primary-teal)', marginTop: '8px' }}>{totalViews}</h2>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-dark)', textTransform: 'uppercase', fontWeight: 600 }}>Pending Role Requests</span>
+          <h2 style={{ fontSize: '2.5rem', fontFamily: 'Outfit', color: 'var(--primary-teal)', marginTop: '8px' }}>{pendingRequestsCount}</h2>
         </div>
         <div className="glass-card" style={{ padding: '24px' }}>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-dark)', textTransform: 'uppercase', fontWeight: 600 }}>Categories Count</span>
@@ -221,73 +315,279 @@ export default function Dashboard({ user }) {
         </div>
       </section>
 
-      {/* Main Inventory Table */}
-      <section className="glass-panel" style={{ overflow: 'hidden' }}>
-        <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ fontSize: '1.2rem', fontFamily: 'Outfit' }}>Medicine Inventory</h3>
-          {success && <span style={{ color: 'var(--success)', fontSize: '0.85rem', fontWeight: 500 }}>{success}</span>}
-        </div>
+      {/* TAB 1: Main Inventory Table */}
+      {activeTab === 'inventory' && (
+        <section className="glass-panel" style={{ overflow: 'hidden' }}>
+          <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: '1.2rem', fontFamily: 'Outfit' }}>Medicine Inventory</h3>
+            {success && <span style={{ color: 'var(--success)', fontSize: '0.85rem', fontWeight: 500 }}>{success}</span>}
+          </div>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', backgroundColor: 'rgba(255, 255, 255, 0.01)' }}>
-                <th style={{ padding: '16px 24px' }}>Name</th>
-                <th style={{ padding: '16px 24px' }}>Generic Name</th>
-                <th style={{ padding: '16px 24px' }}>Category</th>
-                <th style={{ padding: '16px 24px' }}>Type</th>
-                <th style={{ padding: '16px 24px' }}>Views</th>
-                <th style={{ padding: '16px 24px' }}>Status</th>
-                <th style={{ padding: '16px 24px', textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {medicines.map((med) => (
-                <tr key={med._id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)', transition: 'background 0.2s ease' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.01)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
-                  <td style={{ padding: '16px 24px', fontWeight: 600, color: 'var(--text-main)' }}>{med.name}</td>
-                  <td style={{ padding: '16px 24px', color: 'var(--primary-teal)', fontStyle: 'italic' }}>{med.genericName}</td>
-                  <td style={{ padding: '16px 24px', color: 'var(--text-muted)' }}>{med.category?.name || 'N/A'}</td>
-                  <td style={{ padding: '16px 24px' }}>
-                    <span className={`badge ${med.prescriptionRequired ? 'badge-rx' : 'badge-otc'}`} style={{ fontSize: '0.7rem' }}>
-                      {med.prescriptionRequired ? 'Rx' : 'OTC'}
-                    </span>
-                  </td>
-                  <td style={{ padding: '16px 24px', color: 'var(--text-muted)' }}>{med.viewCount || 0}</td>
-                  <td style={{ padding: '16px 24px' }}>
-                    <span style={{
-                      color: med.isActive ? 'var(--success)' : 'var(--danger)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      fontSize: '0.8rem',
-                      fontWeight: 600
-                    }}>
-                      {med.isActive ? <Check size={14} /> : <X size={14} />}
-                      {med.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                      <button onClick={() => navigate(`/medicines/${med._id}`)} className="btn btn-secondary" style={{ padding: '6px 10px', border: 'none' }} title="View on Site">
-                        <Eye size={14} />
-                      </button>
-                      <button onClick={() => handleOpenEditModal(med)} className="btn btn-secondary" style={{ padding: '6px 10px', border: 'none' }} title="Edit">
-                        <Edit2 size={14} color="var(--primary-teal)" />
-                      </button>
-                      {med.isActive && (
-                        <button onClick={() => handleDelete(med._id)} className="btn btn-secondary" style={{ padding: '6px 10px', border: 'none' }} title="Deactivate">
-                          <Trash2 size={14} color="var(--danger)" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', backgroundColor: 'rgba(255, 255, 255, 0.01)' }}>
+                  <th style={{ padding: '16px 24px' }}>Name</th>
+                  <th style={{ padding: '16px 24px' }}>Generic Name</th>
+                  <th style={{ padding: '16px 24px' }}>Category</th>
+                  <th style={{ padding: '16px 24px' }}>Type</th>
+                  <th style={{ padding: '16px 24px' }}>Views</th>
+                  <th style={{ padding: '16px 24px' }}>Status</th>
+                  <th style={{ padding: '16px 24px', textAlign: 'right' }}>Actions</th>
                 </tr>
+              </thead>
+              <tbody>
+                {medicines.map((med) => (
+                  <tr key={med._id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)', transition: 'background 0.2s ease' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.01)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                    <td style={{ padding: '16px 24px', fontWeight: 600, color: 'var(--text-main)' }}>{med.name}</td>
+                    <td style={{ padding: '16px 24px', color: 'var(--primary-teal)', fontStyle: 'italic' }}>{med.genericName}</td>
+                    <td style={{ padding: '16px 24px', color: 'var(--text-muted)' }}>{med.category?.name || 'N/A'}</td>
+                    <td style={{ padding: '16px 24px' }}>
+                      <span className={`badge ${med.prescriptionRequired ? 'badge-rx' : 'badge-otc'}`} style={{ fontSize: '0.7rem' }}>
+                        {med.prescriptionRequired ? 'Rx' : 'OTC'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '16px 24px', color: 'var(--text-muted)' }}>{med.viewCount || 0}</td>
+                    <td style={{ padding: '16px 24px' }}>
+                      <span style={{
+                        color: med.isActive ? 'var(--success)' : 'var(--danger)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        fontSize: '0.8rem',
+                        fontWeight: 600
+                      }}>
+                        {med.isActive ? <Check size={14} /> : <X size={14} />}
+                        {med.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '16px 24px', textAlign: 'right' }}>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                        <button onClick={() => navigate(`/medicines/${med._id}`)} className="btn btn-secondary" style={{ padding: '6px 10px', border: 'none' }} title="View on Site">
+                          <Eye size={14} />
+                        </button>
+                        <button onClick={() => handleOpenEditModal(med)} className="btn btn-secondary" style={{ padding: '6px 10px', border: 'none' }} title="Edit">
+                          <Edit2 size={14} color="var(--primary-teal)" />
+                        </button>
+                        {med.isActive && (
+                          <button onClick={() => handleDelete(med._id)} className="btn btn-secondary" style={{ padding: '6px 10px', border: 'none' }} title="Deactivate">
+                            <Trash2 size={14} color="var(--danger)" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {/* TAB 2: Role Verification Requests Table */}
+      {activeTab === 'role-requests' && user?.role?.name === 'admin' && (
+        <section className="glass-panel" style={{ overflow: 'hidden' }}>
+          <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+            <h3 style={{ fontSize: '1.2rem', fontFamily: 'Outfit' }}>Role Verification Requests</h3>
+            
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Filter:</span>
+              {['all', 'pending', 'approved', 'rejected'].map(st => (
+                <button
+                  key={st}
+                  onClick={() => setFilterStatus(st)}
+                  className={`btn ${filterStatus === st ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ padding: '4px 12px', fontSize: '0.8rem', textTransform: 'capitalize' }}
+                >
+                  {st}
+                </button>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+            </div>
+          </div>
+
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', backgroundColor: 'rgba(255, 255, 255, 0.01)' }}>
+                  <th style={{ padding: '16px 24px' }}>User</th>
+                  <th style={{ padding: '16px 24px' }}>Requested Role</th>
+                  <th style={{ padding: '16px 24px' }}>Verification Documents</th>
+                  <th style={{ padding: '16px 24px' }}>Submission Notes</th>
+                  <th style={{ padding: '16px 24px' }}>Status</th>
+                  <th style={{ padding: '16px 24px', textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRequests.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      No role verification requests found.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredRequests.map((req) => (
+                    <tr key={req._id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)' }}>
+                      <td style={{ padding: '16px 24px' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>
+                          {req.user?.firstName} {req.user?.lastName}
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--primary-teal)' }}>
+                          @{req.user?.username || 'user'} • {req.user?.email}
+                        </div>
+                      </td>
+
+                      <td style={{ padding: '16px 24px' }}>
+                        <span style={{
+                          padding: '4px 12px',
+                          borderRadius: '12px',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          background: 'rgba(139, 92, 246, 0.15)',
+                          color: 'var(--accent-purple)',
+                          border: '1px solid rgba(139, 92, 246, 0.3)'
+                        }}>
+                          {req.requestedRole}
+                        </span>
+                      </td>
+
+                      <td style={{ padding: '16px 24px' }}>
+                        {req.documents && req.documents.length > 0 ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {req.documents.map((doc, idx) => (
+                              <a
+                                key={idx}
+                                href={doc.path}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  fontSize: '0.8rem',
+                                  color: 'var(--primary-teal)',
+                                  textDecoration: 'none',
+                                  fontWeight: 500
+                                }}
+                              >
+                                <FileText size={14} />
+                                <span>{doc.originalName}</span>
+                                <ExternalLink size={12} />
+                              </a>
+                            ))}
+                          </div>
+                        ) : (
+                          <span style={{ color: 'var(--danger)', fontSize: '0.8rem' }}>No Documents Uploaded</span>
+                        )}
+                      </td>
+
+                      <td style={{ padding: '16px 24px', color: 'var(--text-muted)', fontSize: '0.85rem', maxWidth: '220px' }}>
+                        {req.notes || '—'}
+                      </td>
+
+                      <td style={{ padding: '16px 24px' }}>
+                        {req.status === 'pending' && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#f59e0b', fontWeight: 600, fontSize: '0.8rem' }}>
+                            <Clock size={14} /> Pending Review
+                          </span>
+                        )}
+                        {req.status === 'approved' && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--success)', fontWeight: 600, fontSize: '0.8rem' }}>
+                            <CheckCircle2 size={14} /> Approved
+                          </span>
+                        )}
+                        {req.status === 'rejected' && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--danger)', fontWeight: 600, fontSize: '0.8rem' }}>
+                            <XCircle size={14} /> Rejected
+                          </span>
+                        )}
+                      </td>
+
+                      <td style={{ padding: '16px 24px', textAlign: 'right' }}>
+                        {req.status === 'pending' ? (
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                            <button
+                              onClick={() => handleApproveRequest(req._id)}
+                              className="btn btn-primary"
+                              style={{ padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            >
+                              <Check size={14} /> Approve
+                            </button>
+                            <button
+                              onClick={() => setRejectReasonModal(req._id)}
+                              className="btn btn-secondary"
+                              style={{ padding: '6px 14px', fontSize: '0.8rem', borderColor: 'var(--danger)', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            >
+                              <X size={14} /> Reject
+                            </button>
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            Reviewed {req.reviewedAt ? new Date(req.reviewedAt).toLocaleDateString() : ''}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       </div>
+
+      {/* Rejection Reason Modal */}
+      {rejectReasonModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '480px', padding: '32px' }}>
+            <h3 style={{ fontSize: '1.25rem', fontFamily: 'Outfit', marginBottom: '16px' }}>Reject Role Request</h3>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
+              Please state the reason for rejecting this role request.
+            </p>
+
+            <form onSubmit={handleRejectRequestSubmit}>
+              <textarea
+                value={rejectionReasonText}
+                onChange={(e) => setRejectionReasonText(e.target.value)}
+                placeholder="e.g., Documents provided were unreadable or license expired..."
+                rows={3}
+                required
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '10px',
+                  background: 'var(--input-bg)',
+                  border: '1px solid var(--input-border)',
+                  color: 'var(--text-main)',
+                  fontSize: '0.9rem',
+                  marginBottom: '24px',
+                  outline: 'none'
+                }}
+              />
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button type="button" onClick={() => setRejectReasonModal(null)} className="btn btn-secondary">
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary" style={{ background: 'var(--danger)', borderColor: 'var(--danger)' }}>
+                  Confirm Rejection
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Add / Edit Inventory Modal */}
       {showModal && (

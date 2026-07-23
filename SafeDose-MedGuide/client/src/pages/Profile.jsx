@@ -39,6 +39,8 @@ export default function Profile({ user, onUserUpdate }) {
     'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80'
   ];
 
+  const [myRoleRequest, setMyRoleRequest] = useState(null);
+
   useEffect(() => {
     if (user) {
       setUsername(user.username || user.email?.split('@')[0] || '');
@@ -48,6 +50,21 @@ export default function Profile({ user, onUserUpdate }) {
       setEmail(user.email || '');
       setRole(user.role?.name || user.role || 'User');
       setAvatar(user.avatar || '');
+
+      // Fetch user's role verification request status
+      const token = localStorage.getItem('token');
+      if (token) {
+        fetch('/api/role-requests/my-request', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success && data.data?.roleRequest) {
+              setMyRoleRequest(data.data.roleRequest);
+            }
+          })
+          .catch(err => console.error(err));
+      }
     }
   }, [user]);
 
@@ -409,6 +426,55 @@ export default function Profile({ user, onUserUpdate }) {
                 }}>
                   {role}
                 </span>
+
+                {myRoleRequest && myRoleRequest.status === 'pending' && (
+                  <span style={{
+                    padding: '2px 10px',
+                    borderRadius: '12px',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    background: 'rgba(245, 158, 11, 0.15)',
+                    color: '#f59e0b',
+                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    <Clock size={12} /> Pending {myRoleRequest.requestedRole.toUpperCase()} Request
+                  </span>
+                )}
+                {myRoleRequest && myRoleRequest.status === 'approved' && (
+                  <span style={{
+                    padding: '2px 10px',
+                    borderRadius: '12px',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    color: 'var(--success)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    <Check size={12} /> {myRoleRequest.requestedRole.toUpperCase()} Verified
+                  </span>
+                )}
+                {myRoleRequest && myRoleRequest.status === 'rejected' && (
+                  <span style={{
+                    padding: '2px 10px',
+                    borderRadius: '12px',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    color: 'var(--danger)',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }} title={myRoleRequest.rejectionReason}>
+                    <AlertCircle size={12} /> {myRoleRequest.requestedRole.toUpperCase()} Request Rejected
+                  </span>
+                )}
               </div>
             </div>
           </div>

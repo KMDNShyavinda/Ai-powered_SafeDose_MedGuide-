@@ -28,6 +28,7 @@ const aiChatRoutes = require('./src/routes/aiChatRoutes');
 const dashboardRoutes = require('./src/routes/dashboardRoutes');
 const prescriptionRoutes = require('./src/routes/prescriptionRoutes');
 const reminderRoutes = require('./src/routes/reminderRoutes');
+const roleRequestRoutes = require('./src/routes/roleRequestRoutes');
 
 const app = express();
 
@@ -66,6 +67,7 @@ app.use('/api/ai-chat', aiChatRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/reminders', reminderRoutes);
+app.use('/api/role-requests', roleRequestRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

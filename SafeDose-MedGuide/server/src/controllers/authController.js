@@ -3,9 +3,12 @@ const Role = require('../models/Role');
 const { generateAccessToken, generateRefreshToken } = require('../utils/generateToken');
 const { sendSuccess, sendError } = require('../utils/apiResponse');
 
+const RoleRequest = require('../models/RoleRequest');
+
 exports.register = async (req, res) => {
   try {
-    const { firstName, lastName, email, password, phone, roleName, username } = req.body;
+    const { firstName, lastName, email, password, phone, username, requestedRole, notes } = req.body;
+    
     const existingUser = await User.findOne({ email });
     if (existingUser) return sendError(res, 'Email already registered', 400);
     
@@ -14,19 +17,76 @@ exports.register = async (req, res) => {
       if (existingUsername) return sendError(res, 'Username is already taken', 400);
     }
     
-    const assignRole = roleName || 'user';
-    const role = await Role.findOne({ name: assignRole });
-    if (!role) return sendError(res, 'Invalid role specified', 400);
+    // Always assign standard 'user' role by default upon registration
+    const defaultRole = await Role.findOne({ name: 'user' });
+    if (!defaultRole) return sendError(res, 'Default user role not found in system', 500);
     
     const defaultUsername = username ? username.trim() : email.split('@')[0];
-    const user = await User.create({ username: defaultUsername, firstName, lastName, email, password, phone, role: role._id });
+    const user = await User.create({ 
+      username: defaultUsername, 
+      firstName, 
+      lastName, 
+      email, 
+      password, 
+      phone, 
+      role: defaultRole._id 
+    });
+
+    let createdRoleRequest = null;
+
+    // Check if user submitted a request for an elevated role (pharmacist or admin)
+    if (requestedRole && ['pharmacist', 'admin'].includes(requestedRole.toLowerCase())) {
+      const docs = [];
+      if (req.files && req.files.length > 0) {
+        req.files.forEach(file => {
+          docs.push({
+            originalName: file.originalname,
+            filename: file.filename,
+            path: `/uploads/documents/${file.filename}`,
+            mimetype: file.mimetype,
+            size: file.size
+          });
+        });
+      } else {
+        // If requesting an elevated role without documents, reject registration
+        await User.findByIdAndDelete(user._id);
+        return sendError(res, `Requesting '${requestedRole}' role requires uploading supporting verification documents.`, 400);
+      }
+
+      createdRoleRequest = await RoleRequest.create({
+        user: user._id,
+        requestedRole: requestedRole.toLowerCase(),
+        documents: docs,
+        notes: notes || '',
+        status: 'pending'
+      });
+    }
+
     const accessToken = generateAccessToken(user._id);
     const refreshToken = generateRefreshToken(user._id);
     const userData = await User.findById(user._id).populate('role');
-    return sendSuccess(res, 'Registration successful', {
-      user: { _id: userData._id, username: userData.username, firstName: userData.firstName, lastName: userData.lastName, email: userData.email, phone: userData.phone, role: userData.role, avatar: userData.avatar, createdAt: userData.createdAt },
-      accessToken, refreshToken,
-    }, 201);
+    
+    return sendSuccess(res, createdRoleRequest 
+      ? 'Registration successful! Your role verification request has been submitted for Admin approval.' 
+      : 'Registration successful!', 
+      {
+        user: { 
+          _id: userData._id, 
+          username: userData.username, 
+          firstName: userData.firstName, 
+          lastName: userData.lastName, 
+          email: userData.email, 
+          phone: userData.phone, 
+          role: userData.role, 
+          avatar: userData.avatar, 
+          createdAt: userData.createdAt 
+        },
+        accessToken, 
+        refreshToken,
+        roleRequest: createdRoleRequest
+      }, 
+      201
+    );
   } catch (error) { return sendError(res, error.message); }
 };
 
