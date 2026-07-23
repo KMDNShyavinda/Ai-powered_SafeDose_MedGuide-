@@ -50,27 +50,48 @@ export default function Register({ onLoginSuccess }) {
     setLoading(true);
 
     try {
-      const data = new FormData();
-      data.append('firstName', formData.firstName);
-      data.append('lastName', formData.lastName);
-      data.append('email', formData.email);
-      data.append('password', formData.password);
-      data.append('phone', formData.phone);
+      let response;
 
-      if (formData.requestedRole !== 'user') {
+      if (formData.requestedRole !== 'user' && selectedFiles.length > 0) {
+        const data = new FormData();
+        data.append('firstName', formData.firstName);
+        data.append('lastName', formData.lastName);
+        data.append('email', formData.email);
+        data.append('password', formData.password);
+        data.append('phone', formData.phone || '');
         data.append('requestedRole', formData.requestedRole);
-        data.append('notes', formData.notes);
+        data.append('notes', formData.notes || '');
+
         selectedFiles.forEach((file) => {
           data.append('documents', file);
         });
+
+        response = await fetch('/api/auth/register', {
+          method: 'POST',
+          body: data,
+        });
+      } else {
+        response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            password: formData.password,
+            phone: formData.phone || '',
+          }),
+        });
       }
 
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        body: data,
-      });
-
-      const res = await response.json();
+      let res;
+      try {
+        res = await response.json();
+      } catch (jsonErr) {
+        throw new Error(`Server response error (${response.status}). Please check network connection.`);
+      }
 
       if (!response.ok || !res.success) {
         throw new Error(res.message || 'Registration failed');

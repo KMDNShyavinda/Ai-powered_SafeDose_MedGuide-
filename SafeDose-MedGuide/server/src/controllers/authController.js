@@ -8,27 +8,37 @@ const RoleRequest = require('../models/RoleRequest');
 exports.register = async (req, res) => {
   try {
     const { firstName, lastName, email, password, phone, username, requestedRole, notes } = req.body;
+
+    if (!firstName || !lastName || !email || !password) {
+      return sendError(res, 'Please fill in all required fields (First Name, Last Name, Email, Password)', 400);
+    }
     
-    const existingUser = await User.findOne({ email });
-    if (existingUser) return sendError(res, 'Email already registered', 400);
+    const cleanEmail = email.trim().toLowerCase();
+    const existingUser = await User.findOne({ email: cleanEmail });
+    if (existingUser) return sendError(res, 'Email address is already registered', 400);
     
-    if (username) {
+    if (username && username.trim()) {
       const existingUsername = await User.findOne({ username: username.trim() });
       if (existingUsername) return sendError(res, 'Username is already taken', 400);
     }
     
     // Always assign standard 'user' role by default upon registration
-    const defaultRole = await Role.findOne({ name: 'user' });
-    if (!defaultRole) return sendError(res, 'Default user role not found in system', 500);
+    let defaultRole = await Role.findOne({ name: 'user' });
+    if (!defaultRole) {
+      defaultRole = await Role.create({ name: 'user', description: 'Standard User' });
+    }
     
-    const defaultUsername = username ? username.trim() : email.split('@')[0];
+    const defaultUsername = (username && username.trim()) 
+      ? username.trim() 
+      : (cleanEmail.includes('@') ? cleanEmail.split('@')[0] : `user_${Date.now()}`);
+
     const user = await User.create({ 
       username: defaultUsername, 
-      firstName, 
-      lastName, 
-      email, 
+      firstName: firstName.trim(), 
+      lastName: lastName.trim(), 
+      email: cleanEmail, 
       password, 
-      phone, 
+      phone: phone || '', 
       role: defaultRole._id 
     });
 

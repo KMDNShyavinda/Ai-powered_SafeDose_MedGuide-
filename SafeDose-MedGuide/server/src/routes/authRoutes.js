@@ -7,6 +7,8 @@ const { register, login, getMe, changePassword, logout } = require('../controlle
 const { protect } = require('../middleware/auth');
 const { authLimiter } = require('../middleware/rateLimiter');
 
+const { sendError } = require('../utils/apiResponse');
+
 // Ensure documents upload directory exists
 const docDir = path.join(__dirname, '../../uploads/documents');
 if (!fs.existsSync(docDir)) {
@@ -39,7 +41,19 @@ const uploadDocs = multer({
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit per document
 });
 
-router.post('/register', authLimiter, uploadDocs.array('documents', 5), register);
+const handleDocsUpload = (req, res, next) => {
+  uploadDocs.array('documents', 5)(req, res, (err) => {
+    if (err) {
+      if (err instanceof multer.MulterError) {
+        return sendError(res, `Document upload error: ${err.message}`, 400);
+      }
+      return sendError(res, err.message || 'Error processing document upload', 400);
+    }
+    next();
+  });
+};
+
+router.post('/register', authLimiter, handleDocsUpload, register);
 router.post('/login', authLimiter, login);
 router.post('/logout', protect, logout);
 router.get('/me', protect, getMe);
