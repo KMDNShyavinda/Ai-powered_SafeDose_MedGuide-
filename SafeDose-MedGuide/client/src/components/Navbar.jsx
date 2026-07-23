@@ -89,11 +89,11 @@ export default function Navbar({ user, onLogout }) {
         </button>
 
         {user ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <Link to="/profile" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }} title="View Profile">
               <div style={{
-                width: '32px',
-                height: '32px',
+                width: '34px',
+                height: '34px',
                 borderRadius: '50%',
                 background: 'linear-gradient(135deg, var(--primary-teal), var(--accent-purple))',
                 display: 'flex',
@@ -101,14 +101,25 @@ export default function Navbar({ user, onLogout }) {
                 justifyContent: 'center',
                 color: '#ffffff',
                 fontWeight: 600,
-                fontSize: '0.9rem'
+                fontSize: '0.9rem',
+                overflow: 'hidden',
+                border: isActive('/profile') ? '2px solid var(--primary-teal)' : '1px solid var(--border-color)',
+                boxShadow: isActive('/profile') ? '0 0 10px var(--primary-teal-glow)' : 'none'
               }}>
-                {user.firstName[0]}
+                {user.avatar ? (
+                  <img src={user.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  user.firstName ? user.firstName[0].toUpperCase() : 'U'
+                )}
               </div>
-              <span style={{ fontSize: '0.9rem', color: 'var(--text-main)', fontWeight: 500 }}>
+              <span style={{ fontSize: '0.9rem', color: isActive('/profile') ? 'var(--primary-teal)' : 'var(--text-main)', fontWeight: 600 }}>
                 {user.firstName}
               </span>
-            </div>
+            </Link>
+            <Link to="/profile" className={`btn ${isActive('/profile') ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <User size={14} />
+              Profile
+            </Link>
             <button onClick={onLogout} className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <LogOut size={14} />
               Logout

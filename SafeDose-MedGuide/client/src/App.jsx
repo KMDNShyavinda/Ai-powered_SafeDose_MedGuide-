@@ -11,6 +11,7 @@ import AIChat from './pages/AIChat';
 import Dashboard from './pages/Dashboard';
 import Favorites from './pages/Favorites';
 import PrescriptionAnalyzer from './pages/PrescriptionAnalyzer';
+import Profile from './pages/Profile';
 
 function App() {
   const [user, setUser] = useState(() => {
@@ -24,6 +25,10 @@ function App() {
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
+  };
+
+  const handleUserUpdate = (updatedUserData) => {
+    setUser(updatedUserData);
   };
 
   const handleLogout = () => {
@@ -55,6 +60,10 @@ function App() {
               <Route path="/favorites" element={<Favorites user={user} />} />
               <Route path="/prescriptions" element={<PrescriptionAnalyzer user={user} />} />
               <Route path="/dashboard" element={<Dashboard user={user} />} />
+              <Route 
+                path="/profile" 
+                element={user ? <Profile user={user} onUserUpdate={handleUserUpdate} /> : <Navigate to="/login" />} 
+              />
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </div>
