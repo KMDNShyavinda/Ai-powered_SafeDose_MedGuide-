@@ -61,12 +61,13 @@ exports.changeUserRole = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const { firstName, lastName, username, phone, avatar } = req.body;
-    const updateData = {};
+    const user = await User.findById(req.user._id);
+    if (!user) return sendError(res, 'User not found', 404);
 
-    if (firstName !== undefined) updateData.firstName = firstName;
-    if (lastName !== undefined) updateData.lastName = lastName;
-    if (phone !== undefined) updateData.phone = phone;
-    if (avatar !== undefined) updateData.avatar = avatar;
+    if (firstName !== undefined && firstName.trim() !== '') user.firstName = firstName;
+    if (lastName !== undefined && lastName.trim() !== '') user.lastName = lastName;
+    if (phone !== undefined) user.phone = phone;
+    if (avatar !== undefined) user.avatar = avatar;
 
     if (username && username.trim() !== '') {
       const trimmedUsername = username.trim();
@@ -77,16 +78,12 @@ exports.updateProfile = async (req, res) => {
       if (existingUser) {
         return sendError(res, 'Username is already taken by another account', 400);
       }
-      updateData.username = trimmedUsername;
+      user.username = trimmedUsername;
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.user._id, 
-      updateData, 
-      { new: true, runValidators: true }
-    ).populate('role');
-
-    return sendSuccess(res, 'Profile updated successfully', { user });
+    await user.save();
+    const updatedUser = await User.findById(user._id).populate('role');
+    return sendSuccess(res, 'Profile updated successfully', { user: updatedUser });
   } catch (error) { 
     return sendError(res, error.message); 
   }
@@ -98,13 +95,14 @@ exports.uploadAvatar = async (req, res) => {
       return sendError(res, 'Please upload an image file for avatar', 400);
     }
     const avatarUrl = `/uploads/avatars/${req.file.filename}`;
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      { avatar: avatarUrl },
-      { new: true }
-    ).populate('role');
+    const user = await User.findById(req.user._id);
+    if (!user) return sendError(res, 'User not found', 404);
 
-    return sendSuccess(res, 'Profile picture uploaded successfully', { user, avatarUrl });
+    user.avatar = avatarUrl;
+    await user.save();
+    const updatedUser = await User.findById(user._id).populate('role');
+
+    return sendSuccess(res, 'Profile picture uploaded successfully', { user: updatedUser, avatarUrl });
   } catch (error) {
     return sendError(res, error.message);
   }

@@ -114,27 +114,59 @@ export default function Profile({ user, onUserUpdate }) {
 
     try {
       const token = localStorage.getItem('token');
-      const formData = new FormData();
-      formData.append('avatar', selectedFile);
+      let newAvatarUrl = '';
 
-      const response = await fetch('/api/users/profile/avatar', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
+      try {
+        const formData = new FormData();
+        formData.append('avatar', selectedFile);
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to upload profile picture');
+        const response = await fetch('/api/users/profile/avatar', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+
+        const data = await response.json();
+        if (response.ok && data.success) {
+          newAvatarUrl = data.data.user?.avatar || data.data.avatarUrl;
+        }
+      } catch (uploadErr) {
+        console.warn('Multipart upload fallback:', uploadErr);
+      }
+
+      // Fallback to Data URL if direct file path wasn't returned
+      if (!newAvatarUrl) {
+        newAvatarUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.onerror = (e) => reject(new Error('Failed to read image file'));
+          reader.readAsDataURL(selectedFile);
+        });
+
+        const res = await fetch('/api/users/profile', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ avatar: newAvatarUrl }),
+        });
+
+        const resData = await res.json();
+        if (!res.ok) {
+          throw new Error(resData.message || 'Failed to save avatar photo');
+        }
+        newAvatarUrl = resData.data.user?.avatar || newAvatarUrl;
       }
 
       showToast('success', 'Profile picture updated successfully!');
-      setAvatar(data.data.avatarUrl);
+      setAvatar(newAvatarUrl);
+      setPreviewUrl('');
       setSelectedFile(null);
 
-      const updatedUser = { ...user, avatar: data.data.avatarUrl };
+      const updatedUser = { ...user, avatar: newAvatarUrl };
       localStorage.setItem('user', JSON.stringify(updatedUser));
       if (onUserUpdate) onUserUpdate(updatedUser);
     } catch (err) {
@@ -164,12 +196,13 @@ export default function Profile({ user, onUserUpdate }) {
         throw new Error(data.message || 'Failed to set avatar');
       }
 
+      const savedAvatar = data.data.user?.avatar || presetUrl;
       showToast('success', 'Avatar updated from preset!');
-      setAvatar(presetUrl);
+      setAvatar(savedAvatar);
       setPreviewUrl('');
       setSelectedFile(null);
 
-      const updatedUser = { ...user, avatar: presetUrl };
+      const updatedUser = { ...user, avatar: savedAvatar };
       localStorage.setItem('user', JSON.stringify(updatedUser));
       if (onUserUpdate) onUserUpdate(updatedUser);
     } catch (err) {
