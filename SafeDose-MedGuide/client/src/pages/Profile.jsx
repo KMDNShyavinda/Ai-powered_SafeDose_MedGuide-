@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Phone, Shield, Camera, Key, Save, Check, AlertCircle, Eye, EyeOff, Sparkles, Upload, Clock, UserCheck } from 'lucide-react';
+import { User, Mail, Phone, Shield, Camera, Key, Save, Check, AlertCircle, Eye, EyeOff, Sparkles, Upload, Clock, UserCheck, X, Maximize2 } from 'lucide-react';
 
 export default function Profile({ user, onUserUpdate }) {
   const [activeTab, setActiveTab] = useState('info'); // 'info' | 'avatar' | 'security'
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
   
   // Profile info state
   const [username, setUsername] = useState('');
@@ -323,19 +324,24 @@ export default function Profile({ user, onUserUpdate }) {
         }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '24px' }}>
             {/* Avatar Circle */}
-            <div style={{
-              position: 'relative',
-              width: '100px',
-              height: '100px',
-              borderRadius: '50%',
-              border: '4px solid var(--bg-dark-900)',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-              overflow: 'hidden',
-              background: 'linear-gradient(135deg, var(--primary-teal), var(--accent-purple))',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
+            <div 
+              style={{
+                position: 'relative',
+                width: '100px',
+                height: '100px',
+                borderRadius: '50%',
+                border: '4px solid var(--bg-dark-900)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                overflow: 'hidden',
+                background: 'linear-gradient(135deg, var(--primary-teal), var(--accent-purple))',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer'
+              }}
+              onClick={() => setShowPhotoModal(true)}
+              title="Click to View Profile Photo"
+            >
               {avatar ? (
                 <img src={avatar} alt="Profile Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
@@ -344,27 +350,43 @@ export default function Profile({ user, onUserUpdate }) {
                 </span>
               )}
 
-              <button
-                onClick={() => setActiveTab('avatar')}
-                title="Change Avatar"
+              <div
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: 'rgba(0,0,0,0.4)',
+                  background: 'rgba(0,0,0,0.5)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  gap: '12px',
                   opacity: 0,
                   transition: 'opacity 0.2s',
-                  cursor: 'pointer',
-                  border: 'none',
                   color: '#ffffff'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
                 onMouseLeave={(e) => e.currentTarget.style.opacity = 0}
               >
-                <Camera size={24} />
-              </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowPhotoModal(true);
+                  }}
+                  title="View Full Photo"
+                  style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', padding: '8px', cursor: 'pointer', color: '#ffffff', display: 'flex' }}
+                >
+                  <Eye size={18} />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveTab('avatar');
+                  }}
+                  title="Change Photo"
+                  style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', padding: '8px', cursor: 'pointer', color: '#ffffff', display: 'flex' }}
+                >
+                  <Camera size={18} />
+                </button>
+              </div>
             </div>
 
             <div>
@@ -823,6 +845,122 @@ export default function Profile({ user, onUserUpdate }) {
               {loading ? 'Updating Password...' : 'Update Password'}
             </button>
           </form>
+        </div>
+      )}
+
+      {/* FULL-SIZE PROFILE PHOTO LIGHTBOX MODAL */}
+      {showPhotoModal && (
+        <div 
+          onClick={() => setShowPhotoModal(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            background: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(16px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+            animation: 'fadeIn 0.2s ease-out'
+          }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'relative',
+              maxWidth: '460px',
+              width: '100%',
+              background: 'var(--bg-dark-800)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '24px',
+              padding: '28px',
+              textAlign: 'center',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.6)',
+            }}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setShowPhotoModal(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '50%',
+                width: '36px',
+                height: '36px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--text-main)',
+                cursor: 'pointer',
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+            >
+              <X size={20} />
+            </button>
+
+            <h3 style={{ fontSize: '1.2rem', marginBottom: '20px', fontWeight: 700, color: 'var(--text-main)' }}>
+              Profile Photo
+            </h3>
+
+            {/* Large Photo Display */}
+            <div style={{
+              width: '240px',
+              height: '240px',
+              margin: '0 auto 20px',
+              borderRadius: '50%',
+              overflow: 'hidden',
+              background: 'linear-gradient(135deg, var(--primary-teal), var(--accent-purple))',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 12px 32px var(--primary-teal-glow)',
+              border: '4px solid var(--primary-teal)'
+            }}>
+              {avatar ? (
+                <img src={avatar} alt="Full Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <span style={{ fontSize: '5rem', fontWeight: 800, color: '#ffffff' }}>
+                  {userInitial}
+                </span>
+              )}
+            </div>
+
+            {/* User Info Title */}
+            <h4 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 4px', color: 'var(--text-main)' }}>
+              {firstName} {lastName}
+            </h4>
+            <p style={{ color: 'var(--primary-teal)', fontWeight: 600, margin: '0 0 24px', fontSize: '0.95rem' }}>
+              @{username || email.split('@')[0]}
+            </p>
+
+            {/* Modal Actions */}
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button
+                onClick={() => {
+                  setShowPhotoModal(false);
+                  setActiveTab('avatar');
+                }}
+                className="btn btn-primary"
+                style={{ padding: '10px 20px', borderRadius: '12px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                <Camera size={16} />
+                Change Photo
+              </button>
+              <button
+                onClick={() => setShowPhotoModal(false)}
+                className="btn btn-secondary"
+                style={{ padding: '10px 20px', borderRadius: '12px', fontSize: '0.9rem' }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
