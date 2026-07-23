@@ -90,21 +90,35 @@ export default function Navbar({ user, onLogout }) {
 
         {user ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <Link to="/profile" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }} title="View Profile">
+            <Link 
+              to="/profile" 
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '10px', 
+                textDecoration: 'none',
+                padding: '4px 12px 4px 4px',
+                borderRadius: '24px',
+                background: isActive('/profile') ? 'var(--primary-teal-glow)' : 'rgba(255,255,255,0.04)',
+                border: isActive('/profile') ? '1px solid var(--primary-teal)' : '1px solid var(--border-color)',
+                transition: 'all 0.2s ease',
+                cursor: 'pointer'
+              }} 
+              title="View & Edit My Profile"
+            >
               <div style={{
-                width: '34px',
-                height: '34px',
+                width: '36px',
+                height: '36px',
                 borderRadius: '50%',
                 background: 'linear-gradient(135deg, var(--primary-teal), var(--accent-purple))',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: '#ffffff',
-                fontWeight: 600,
-                fontSize: '0.9rem',
+                fontWeight: 700,
+                fontSize: '0.95rem',
                 overflow: 'hidden',
-                border: isActive('/profile') ? '2px solid var(--primary-teal)' : '1px solid var(--border-color)',
-                boxShadow: isActive('/profile') ? '0 0 10px var(--primary-teal-glow)' : 'none'
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
               }}>
                 {user.avatar ? (
                   <img src={user.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -116,10 +130,7 @@ export default function Navbar({ user, onLogout }) {
                 {user.firstName}
               </span>
             </Link>
-            <Link to="/profile" className={`btn ${isActive('/profile') ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <User size={14} />
-              Profile
-            </Link>
+
             <button onClick={onLogout} className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <LogOut size={14} />
               Logout
