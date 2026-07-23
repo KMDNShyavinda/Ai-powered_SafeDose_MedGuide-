@@ -5,18 +5,26 @@ const { sendSuccess, sendError } = require('../utils/apiResponse');
 
 exports.register = async (req, res) => {
   try {
-    const { firstName, lastName, email, password, phone, roleName } = req.body;
+    const { firstName, lastName, email, password, phone, roleName, username } = req.body;
     const existingUser = await User.findOne({ email });
     if (existingUser) return sendError(res, 'Email already registered', 400);
+    
+    if (username) {
+      const existingUsername = await User.findOne({ username: username.trim() });
+      if (existingUsername) return sendError(res, 'Username is already taken', 400);
+    }
+    
     const assignRole = roleName || 'user';
     const role = await Role.findOne({ name: assignRole });
     if (!role) return sendError(res, 'Invalid role specified', 400);
-    const user = await User.create({ firstName, lastName, email, password, phone, role: role._id });
+    
+    const defaultUsername = username ? username.trim() : email.split('@')[0];
+    const user = await User.create({ username: defaultUsername, firstName, lastName, email, password, phone, role: role._id });
     const accessToken = generateAccessToken(user._id);
     const refreshToken = generateRefreshToken(user._id);
     const userData = await User.findById(user._id).populate('role');
     return sendSuccess(res, 'Registration successful', {
-      user: { _id: userData._id, firstName: userData.firstName, lastName: userData.lastName, email: userData.email, phone: userData.phone, role: userData.role, avatar: userData.avatar },
+      user: { _id: userData._id, username: userData.username, firstName: userData.firstName, lastName: userData.lastName, email: userData.email, phone: userData.phone, role: userData.role, avatar: userData.avatar, createdAt: userData.createdAt },
       accessToken, refreshToken,
     }, 201);
   } catch (error) { return sendError(res, error.message); }
@@ -35,7 +43,7 @@ exports.login = async (req, res) => {
     const accessToken = generateAccessToken(user._id);
     const refreshToken = generateRefreshToken(user._id);
     return sendSuccess(res, 'Login successful', {
-      user: { _id: user._id, firstName: user.firstName, lastName: user.lastName, email: user.email, phone: user.phone, role: user.role, avatar: user.avatar },
+      user: { _id: user._id, username: user.username || user.email.split('@')[0], firstName: user.firstName, lastName: user.lastName, email: user.email, phone: user.phone, role: user.role, avatar: user.avatar, createdAt: user.createdAt },
       accessToken, refreshToken,
     });
   } catch (error) { return sendError(res, error.message); }

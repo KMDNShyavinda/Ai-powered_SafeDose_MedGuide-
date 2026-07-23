@@ -60,8 +60,52 @@ exports.changeUserRole = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   try {
-    const { firstName, lastName, phone } = req.body;
-    const user = await User.findByIdAndUpdate(req.user._id, { firstName, lastName, phone }, { new: true, runValidators: true }).populate('role');
+    const { firstName, lastName, username, phone, avatar } = req.body;
+    const updateData = {};
+
+    if (firstName !== undefined) updateData.firstName = firstName;
+    if (lastName !== undefined) updateData.lastName = lastName;
+    if (phone !== undefined) updateData.phone = phone;
+    if (avatar !== undefined) updateData.avatar = avatar;
+
+    if (username && username.trim() !== '') {
+      const trimmedUsername = username.trim();
+      const existingUser = await User.findOne({ 
+        username: trimmedUsername, 
+        _id: { $ne: req.user._id } 
+      });
+      if (existingUser) {
+        return sendError(res, 'Username is already taken by another account', 400);
+      }
+      updateData.username = trimmedUsername;
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id, 
+      updateData, 
+      { new: true, runValidators: true }
+    ).populate('role');
+
     return sendSuccess(res, 'Profile updated successfully', { user });
-  } catch (error) { return sendError(res, error.message); }
+  } catch (error) { 
+    return sendError(res, error.message); 
+  }
+};
+
+exports.uploadAvatar = async (req, res) => {
+  try {
+    if (!req.file) {
+      return sendError(res, 'Please upload an image file for avatar', 400);
+    }
+    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { avatar: avatarUrl },
+      { new: true }
+    ).populate('role');
+
+    return sendSuccess(res, 'Profile picture uploaded successfully', { user, avatarUrl });
+  } catch (error) {
+    return sendError(res, error.message);
+  }
 };
